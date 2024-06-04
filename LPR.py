@@ -5,7 +5,7 @@ import skimage
 pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract.exe'
 
 class LPR:
-    def __init__(self, min_w=80, max_w=110, min_h=25, max_h=52, ratio=3.07692307692):
+    def __init__(self, min_w=80, max_w=360, min_h=25, max_h=130, ratio=2.769230769230769):
         self.min_w = min_w
         self.max_w = max_w
         self.min_h = min_h
