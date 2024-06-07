@@ -16,12 +16,15 @@ class LPR:
     def grayscale(self, img):
         return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    def apply_threshold(self, img): # Con otsu aplica un threshold especifico para cada imaggen
-        _, thresh_img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU) 
-        return thresh_img
+    #def apply_threshold(self, img): # Con otsu aplica un threshold especifico para cada imaggen
+     #   _, thresh_img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU) 
+     #   return thresh_img
+        
+    def apply_threshold(self, img):
+        return cv2.threshold(img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]    
 
     def apply_adaptive_threshold(self, img):
-        return cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 7, 13)
+        return cv2.threshold(img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1] 
 
     def find_contours(self, img):
         return cv2.findContours(img, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)[0]
@@ -52,7 +55,12 @@ class LPR:
 
     def crop_license_plate(self, img, license):
         x, y, w, h = cv2.boundingRect(license)
-        return img[y:y+h, x:x+w]
+        cropped = img[y:y+h, x:x+w]
+        
+        # Increase resolution using interpolation
+        hd_width, hd_height = w * 5, h * 5  # pa que se vea mas HD
+        cropped_hd = cv2.resize(cropped, (hd_width, hd_height), interpolation=cv2.INTER_CUBIC)
+        return cropped_hd
 
     def clear_border(self, img):
         return skimage.segmentation.clear_border(img)

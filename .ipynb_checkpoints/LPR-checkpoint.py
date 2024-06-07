@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import matplotlib.pyplot as plt
 import pytesseract
 import skimage
 pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract.exe'
@@ -15,8 +16,9 @@ class LPR:
     def grayscale(self, img):
         return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    def apply_threshold(self, img):
-        return cv2.threshold(img, 170, 255, cv2.THRESH_BINARY_INV)[1]
+    def apply_threshold(self, img): # Con otsu aplica un threshold especifico para cada imaggen
+        _, thresh_img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU) 
+        return thresh_img
 
     def apply_adaptive_threshold(self, img):
         return cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 7, 13)
@@ -24,27 +26,42 @@ class LPR:
     def find_contours(self, img):
         return cv2.findContours(img, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)[0]
 
-    def filter_candidates(self, contours):
+    def filter_candidates(self, img, contours):
         candidates = []
         for cnt in contours:
             x, y, w, h = cv2.boundingRect(cnt)
-            aspect_ratio = float(w) / h
-            if (np.isclose(aspect_ratio, self.ratio, atol=0.7) and
-               (self.max_w > w > self.min_w) and
-               (self.max_h > h > self.min_h)):
-                candidates.append(cnt)
+            # Filter criteria based on size
+            if self.min_w <= w <= self.max_w and self.min_h <= h <= self.max_h:
+                # Extract the region of interest
+                roi = img[y:y+h, x:x+w]
+                
+                # Apply OCR to the region of interest
+                text = pytesseract.image_to_string(roi, config='--psm 8 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
+                
+                # If OCR detects alphanumeric characters, consider it a candidate
+                if any(char.isalnum() for char in text):
+                    candidates.append(cnt)
         return candidates
 
     def get_lowest_candidate(self, candidates):
-        ys = []
-        for cnt in candidates:
-            x, y, w, h = cv2.boundingRect(cnt)
+    square_candidates = []
+    ys = []
+    for cnt in candidates:
+        x, y, w, h = cv2.boundingRect(cnt)
+        # Calcula la relación de aspecto
+        aspect_ratio = float(w) / h
+        # Filtra por contornos cuadrados con una tolerancia en la relación de aspecto
+        if 0.9 <= aspect_ratio <= 1.1:
+            square_candidates.append(cnt)
             ys.append(y)
-        return candidates[np.argmax(ys)]
+    if not square_candidates:
+        return None
+    # Retorna el contorno cuadrado más bajo
+    return square_candidates[np.argmax(ys)]
 
     def crop_license_plate(self, img, license):
         x, y, w, h = cv2.boundingRect(license)
-        return img[y:y+h,x:x+w]
+        return img[y:y+h, x:x+w]
 
     def clear_border(self, img):
         return skimage.segmentation.clear_border(img)
