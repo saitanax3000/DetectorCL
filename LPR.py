@@ -58,7 +58,7 @@ class LPR:
         cropped = img[y:y+h, x:x+w]
         
         # Increase resolution using interpolation
-        hd_width, hd_height = w * 5, h * 5  # pa que se vea mas HD
+        hd_width, hd_height = w * 10, h * 10  # pa que se vea mas HD
         cropped_hd = cv2.resize(cropped, (hd_width, hd_height), interpolation=cv2.INTER_CUBIC)
         return cropped_hd
 
